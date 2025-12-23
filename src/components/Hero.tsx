@@ -1,0 +1,205 @@
+import React from 'react';
+import { MapPin, Phone, Clock } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useSettings } from '../hooks/useSettings';
+import { isInVacationPeriod } from '../utils/vacationChecker';
+
+const Hero = () => {
+  const { t, language } = useLanguage();
+  const { settings, loading } = useSettings();
+
+  const shouldShowVacationBanner = () => {
+    if (!settings?.opening_hours?.vacation_mode?.show_banner) return false;
+    return isInVacationPeriod(settings?.opening_hours?.vacation_mode);
+  };
+
+  return (
+    <section className="relative min-h-screen bg-gradient-to-br from-papio-400 to-papio-500 pt-20">
+      {/* Wave decoration */}
+      <div className="absolute bottom-0 left-0 right-0">
+        <svg
+          viewBox="0 0 1200 120"
+          preserveAspectRatio="none"
+          className="relative block w-full h-16"
+        >
+          <path
+            d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"
+            fill="#f3f4f6"
+          />
+        </svg>
+      </div>
+
+      <div className="relative z-10 max-w-6xl mx-auto px-4 py-20">
+        {/* Main logo and title */}
+        <div className="text-center mb-16 relative">
+          {/* Panneau de vacances */}
+          {!loading && shouldShowVacationBanner() && (
+            <img
+              src={settings?.opening_hours?.vacation_mode?.banner_image_url || "/images/uploads/fermeture.gif"}
+              alt="Restaurant en vacances de Noël - Réouverture le 07/01/2026"
+              className="absolute -top-32 md:-top-8 -left-11 md:-left-19 lg:-left-27 w-64 md:w-80 lg:w-96 z-20 transform -rotate-[20deg] scale-[0.83] md:scale-95 hover:scale-110 transition-transform duration-300"
+            />
+          )}
+
+          {/* Background image for title */}
+          <div
+            className="absolute inset-0 rounded-3xl opacity-20 blur-sm"
+            style={{
+              backgroundImage: 'url(/vue_du_port_bleu.gif)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat'
+            }}
+          ></div>
+
+          {/* H1 SEO-friendly pour les moteurs de recherche */}
+          <h1 className="sr-only">
+            Le Papio - Restaurant Pizzeria à Cherbourg-en-Cotentin
+          </h1>
+
+          {/* Affichage visuel du logo (pas un H1) */}
+          <div className="flex items-center justify-center text-white mb-8 mt-16 md:mt-0" aria-hidden="true">
+            <div className="text-6xl md:text-9xl font-bold mr-1 text-white/90" style={{ fontFamily: 'Dancing Script, cursive', fontWeight: 'normal', WebkitTextStroke: '1px black' }}>
+              Le
+            </div>
+            <img
+              src={
+                !loading && settings?.special_logo?.enabled && settings?.special_logo?.special_logo_url
+                  ? settings.special_logo.special_logo_url
+                  : "/papio2y copy.gif"
+              }
+              className="h-32 md:h-48 w-auto drop-shadow-lg mr-4"
+              style={{ transform: 'scale(1.05)' }}
+              alt="Logo animé Le Papio"
+              onError={(e) => {
+                const fallback = document.createElement('div');
+                fallback.textContent = 'Papio';
+                fallback.className = 'text-8xl font-normal text-white/90';
+                fallback.style.fontFamily = 'Dancing Script, cursive';
+                (e.target as HTMLElement).parentNode?.appendChild(fallback);
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
+          </div>
+
+          <p className="relative z-10 text-xl text-white/90 mb-8 font-light bg-white/15 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/20 shadow-lg max-w-4xl mx-auto">
+            {t('hero.tagline')}
+          </p>
+
+          <p className="relative z-10 text-lg text-white/80 max-w-3xl mx-auto leading-relaxed">
+            {t('hero.description')}
+          </p>
+          
+          {/* Histoire du nom Papio */}
+          <div className="relative z-10 mt-6 max-w-2xl mx-auto">
+            <p className="text-base text-white/70 italic leading-relaxed">
+              {t('hero.story')}
+            </p>
+          </div>
+        </div>
+
+        {/* Info cards */}
+        <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <a 
+            href="#carte" 
+            className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center text-white hover:bg-white/20 transition-colors cursor-pointer"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById('carte')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          >
+            <MapPin className="w-8 h-8 mx-auto mb-4 text-white/90" />
+            <h3 className="font-semibold mb-2">{t('hero.address')}</h3>
+            <p className="text-base font-medium text-white/95">
+              {t('hero.address_full').split('\n').map((line, i) => (
+                <React.Fragment key={i}>
+                  {line}
+                  {i < t('hero.address_full').split('\n').length - 1 && <br />}
+                </React.Fragment>
+              ))}
+            </p>
+          </a>
+
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center text-white">
+            <Phone className="w-8 h-8 mx-auto mb-4 text-white/90" />
+            <h3 className="font-semibold mb-2">{t('hero.reservations')}</h3>
+            <p className="text-lg font-semibold text-white">
+              02 33 92 18 45
+            </p>
+          </div>
+
+          <div className={`bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center text-white ${!loading && shouldShowVacationBanner() ? 'ring-4 ring-red-500 ring-opacity-80' : ''}`}>
+            <Clock className="w-8 h-8 mx-auto mb-4 text-white/90" />
+            <h3 className="font-semibold mb-2">{t('hero.hours')}</h3>
+
+            {!loading && shouldShowVacationBanner() ? (
+              // Mode vacances
+              <div className="space-y-2">
+                <p className="text-lg font-bold text-red-400 uppercase">
+                  {language === 'fr' ? 'Fermé pour les vacances' : 'Closed for holidays'}
+                </p>
+                {settings?.opening_hours?.vacation_mode?.start_date && settings?.opening_hours?.vacation_mode?.end_date && (
+                  <div className="text-xs text-white/90 space-y-1">
+                    <p>
+                      {language === 'fr' ? 'Du' : 'From'}{' '}
+                      <span className="font-semibold">
+                        {new Date(settings.opening_hours.vacation_mode.start_date).toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </p>
+                    <p>
+                      {language === 'fr' ? 'Au' : 'Until'}{' '}
+                      <span className="font-semibold">
+                        {new Date(settings.opening_hours.vacation_mode.end_date).toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </p>
+                  </div>
+                )}
+                {settings?.opening_hours?.vacation_mode?.message && (
+                  <p className="text-xs text-white/70 mt-2 italic">
+                    {language === 'fr'
+                      ? settings.opening_hours.vacation_mode.message
+                      : settings.opening_hours.vacation_mode.message_en || settings.opening_hours.vacation_mode.message}
+                  </p>
+                )}
+              </div>
+            ) : (
+              // Mode normal
+              <>
+                <p className="text-base font-semibold text-white">
+                  {loading ? (
+                    'Chargement...'
+                  ) : (
+                    language === 'fr'
+                      ? (settings.hours_summary || '12h-14h / 19h-22h')
+                      : (settings.hours_summary_en || '12pm-2pm / 7pm-10pm')
+                  )}
+                </p>
+                <p className="text-xs text-white/60 mt-3 italic">
+                  {loading ? '' : (
+                    language === 'fr'
+                      ? (settings.closure_note || 'Fermé le mardi')
+                      : (settings.closure_note_en || 'Closed on Tuesday')
+                  )}
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default Hero;

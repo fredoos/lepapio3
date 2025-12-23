@@ -1,0 +1,332 @@
+import React, { useState, useEffect } from 'react';
+import { Sun, Cloud, CloudRain } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useSettings } from '../hooks/useSettings';
+import LanguageSelector from './LanguageSelector';
+import { isInVacationPeriod } from '../utils/vacationChecker';
+
+interface HeaderProps {
+  activeSection: string;
+}
+
+interface WeatherData {
+  temperature: number;
+  weatherCode: number;
+  icon: 'sun' | 'cloud' | 'rain';
+}
+
+const Header = ({ activeSection }: HeaderProps) => {
+  const { t, language } = useLanguage();
+  const { settings } = useSettings();
+  const [currentTime, setCurrentTime] = useState('20h42');
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [nextOpenTime, setNextOpenTime] = useState('');
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const response = await fetch(
+          'https://api.open-meteo.com/v1/forecast?latitude=49.6337&longitude=-1.6225&current=temperature_2m,weather_code&timezone=Europe%2FParis'
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          const current = data.current;
+
+          let icon: 'sun' | 'cloud' | 'rain' = 'sun';
+          if (current.weather_code <= 1) {
+            icon = 'sun';
+          } else if (current.weather_code <= 3) {
+            icon = 'cloud';
+          } else {
+            icon = 'rain';
+          }
+
+          setWeather({
+            temperature: Math.round(current.temperature_2m),
+            weatherCode: current.weather_code,
+            icon: icon
+          });
+        }
+      } catch (err) {
+        console.error('Erreur météo:', err);
+      }
+    };
+
+    fetchWeather();
+    const weatherInterval = setInterval(fetchWeather, 10 * 60 * 1000);
+
+    return () => clearInterval(weatherInterval);
+  }, []);
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      setCurrentTime(`${hours}h${minutes}`);
+
+      if (!settings.opening_hours) return;
+
+      if (isInVacationPeriod(settings.opening_hours.vacation_mode)) {
+        setIsOpen(false);
+        setNextOpenTime(language === 'fr' ? 'Fermé pour les vacances' : 'Closed for holidays');
+        return;
+      }
+
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const currentDay = dayNames[now.getDay()] as keyof typeof settings.opening_hours;
+      const todaySchedule = settings.opening_hours[currentDay];
+
+      if (!todaySchedule || !todaySchedule.enabled) {
+        setIsOpen(false);
+        setNextOpenTime('Fermé aujourd\'hui');
+        return;
+      }
+
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+      const parseTime = (time: string) => {
+        const [h, m] = time.split(':').map(Number);
+        return h * 60 + m;
+      };
+
+      let isCurrentlyOpen = false;
+      let nextOpen = '';
+
+      if (todaySchedule.lunch.enabled) {
+        const lunchStart = parseTime(todaySchedule.lunch.start);
+        const lunchEnd = parseTime(todaySchedule.lunch.end);
+
+        if (currentTimeInMinutes >= lunchStart && currentTimeInMinutes < lunchEnd) {
+          isCurrentlyOpen = true;
+        } else if (currentTimeInMinutes < lunchStart && !nextOpen) {
+          nextOpen = `Ouvre à ${todaySchedule.lunch.start}`;
+        }
+      }
+
+      if (todaySchedule.dinner.enabled) {
+        const dinnerStart = parseTime(todaySchedule.dinner.start);
+        const dinnerEnd = parseTime(todaySchedule.dinner.end);
+
+        if (currentTimeInMinutes >= dinnerStart && currentTimeInMinutes < dinnerEnd) {
+          isCurrentlyOpen = true;
+        } else if (!isCurrentlyOpen && !nextOpen) {
+          if (currentTimeInMinutes < dinnerStart) {
+            nextOpen = `Ouvre à ${todaySchedule.dinner.start}`;
+          }
+        } else if (!isCurrentlyOpen && todaySchedule.lunch.enabled && currentTimeInMinutes >= parseTime(todaySchedule.lunch.end) && currentTimeInMinutes < dinnerStart) {
+          nextOpen = `Ouvre à ${todaySchedule.dinner.start}`;
+        }
+      }
+
+      if (!isCurrentlyOpen && !nextOpen) {
+        nextOpen = 'Fermé pour aujourd\'hui';
+      }
+
+      setIsOpen(isCurrentlyOpen);
+      setNextOpenTime(nextOpen);
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 60000);
+    return () => clearInterval(interval);
+  }, [settings.opening_hours, language]);
+
+  const navItems = [
+    { id: 'accueil', label: t('nav.home') },
+    { id: 'carte', label: t('nav.menu') },
+    { id: 'photos', label: t('nav.photos') },
+    { id: 'actualites', label: t('nav.news') },
+    { id: 'contact', label: t('nav.contact') }
+  ];
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm" role="banner">
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          {/* Weather widget */}
+          <div className="flex flex-col items-start">
+            <div className="flex items-center space-x-2 text-sm text-gray-600 mb-1" style={{marginLeft: '-8px'}}>
+              {weather ? (
+                <>
+                  {weather.icon === 'sun' && (
+                    <div className="w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-sm">
+                      <Sun className="w-4 h-4 text-white animate-pulse" />
+                    </div>
+                  )}
+                  {weather.icon === 'cloud' && (
+                    <div className="w-6 h-6 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center shadow-sm">
+                      <Cloud className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                  {weather.icon === 'rain' && (
+                    <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-sm">
+                      <CloudRain className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                  <span className="font-medium">{weather.temperature}°</span>
+                </>
+              ) : (
+                <>
+                  <div className="w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-sm">
+                    <Sun className="w-4 h-4 text-white animate-pulse" />
+                  </div>
+                  <span className="font-medium">--°</span>
+                </>
+              )}
+              <span>{currentTime}</span>
+            </div>
+            
+            {/* Small boat logo directly below weather */}
+            <div className="ml-1">
+              <img
+                src={settings.logo_url}
+               alt="Bateau de pêche normand - Le Papio restaurant Cherbourg"
+                className="w-16 h-12 opacity-80 animate-[sailing_6s_ease-in-out_infinite] mt-1"
+                onError={(e) => {
+                  // Fallback SVG if image fails
+                  const fallback = document.createElement('div');
+                  fallback.innerHTML = `
+                    <svg viewBox="0 0 24 24" class="w-16 h-12 text-gray-400 animate-[sailing_6s_ease-in-out_infinite] mt-1">
+                      <path d="M5 18 L12 8 L19 18 L16 20 L12 16 L8 20 Z M12 8 L12 4 M10 12 L14 12" stroke="currentColor" stroke-width="2" fill="none"/>
+                    </svg>
+                  `;
+                  (e.target as HTMLElement).parentNode?.appendChild(fallback);
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
+            </div>
+          </div>
+
+
+          {/* Logo */}
+          <div className="flex items-center space-x-3">
+            <div>
+              <span className="text-2xl md:text-xl font-bold text-gray-800 block">{settings.restaurant_name}</span>
+              <p className="text-sm text-gray-600">{t('header.restaurant')}</p>
+              <div className="flex items-center justify-between mt-1">
+                <span
+                  className={`text-xs font-medium px-2 py-1 rounded-full ${
+                    isOpen
+                      ? 'bg-green-100 text-green-900'
+                      : 'bg-red-100 text-red-900'
+                  }`}
+                  role="status"
+                  aria-live="polite"
+                >
+                  {isOpen ? `🟢 ${t('header.open')}` : `🔴 ${t('header.closed')}`}
+                </span>
+                
+                {/* Mobile Language Selector - visible uniquement sur mobile */}
+                <div className="md:hidden">
+                  <LanguageSelector />
+                </div>
+              </div>
+              
+              {/* Horaires d'ouverture - déplacés sur une nouvelle ligne pour mobile */}
+              <div className="mt-1">
+                {!isOpen && nextOpenTime && (
+                  <span className="text-xs text-gray-500 block">
+                    {nextOpenTime}
+                  </span>
+                )}
+                {((language === 'en' && settings.opening_note_en) || (language === 'fr' && settings.opening_note)) && (
+                  <span className="text-xs text-gray-400 block mt-0.5">
+                    {language === 'en' ? settings.opening_note_en : settings.opening_note}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation Desktop */}
+          <div className="hidden md:flex items-center space-x-4">
+            <nav aria-label="Navigation principale">
+              <ul className="flex items-center space-x-8">
+                {navItems.map((item) => (
+                  <li key={item.id}>
+                    <button
+                      onClick={() => scrollToSection(item.id)}
+                      className={`flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                        activeSection === item.id
+                          ? 'bg-papio-500 text-white'
+                          : 'bg-white text-gray-700 hover:bg-papio-50 hover:text-papio-600 shadow-sm'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+            
+            {/* Desktop Language Selector */}
+            <LanguageSelector />
+          </div>
+
+          {/* Mobile menu button */}
+          <button
+            className="md:hidden p-2"
+            onClick={toggleMobileMenu}
+            aria-label={isMobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-menu"
+          >
+            <div className="w-6 h-6 flex flex-col justify-center space-y-1">
+              <div className={`w-full h-0.5 bg-gray-600 transition-transform duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-1' : ''}`}></div>
+              <div className={`w-full h-0.5 bg-gray-600 transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-0' : ''}`}></div>
+              <div className={`w-full h-0.5 bg-gray-600 transition-transform duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-1' : ''}`}></div>
+            </div>
+          </button>
+        </div>
+        
+        {/* Mobile menu */}
+        {isMobileMenuOpen && (
+          <div id="mobile-menu" className="md:hidden bg-white border-t border-gray-100 shadow-lg">
+            <nav className="px-4 py-6" aria-label="Navigation mobile">
+              <ul className="space-y-4">
+                {navItems.map((item) => (
+                  <li key={item.id}>
+                    <button
+                      onClick={() => {
+                        scrollToSection(item.id);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-lg text-base font-medium transition-all duration-300 ${
+                        activeSection === item.id
+                          ? 'bg-papio-500 text-white'
+                          : 'text-gray-700 hover:bg-papio-50 hover:text-papio-600'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              
+              {/* Note: Mobile Language Selector is now in the main header */}
+            </nav>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+};
+
+export default Header;

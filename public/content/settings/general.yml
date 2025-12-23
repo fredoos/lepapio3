@@ -1,0 +1,20 @@
+hero_message: Restaurant du Cotentin - Pizzeria au cœur de Cherbourg cuisine
+  face au port de Cherbourg - vue mer
+restaurant_name: Le Papio
+logo_url: /bateau.png
+primary_color: "#3B82F6"
+secondary_color: "#1E40AF"
+closure_note: Fermé le mardi
+closure_note_en: Closed on Tuesday
+hours_summary: 12h-14h / 19h-22h
+hours_summary_en: 12pm-2pm / 7pm-10pm
+opening_note: ""
+opening_note_en: ""
+phone: 02 33 92 18 45
+email: restaurantlepapio@gmail.com
+address: 24 quai de Caligny, 50100 Cherbourg-en-Cotentin
+special_logo:
+  enabled: true
+  special_logo_url: /lepapio_noel.png
+short_description: Savourez notre cuisine authentique du terroir normand et nos
+  pizzas artisanales dans une ambiance chaleureuse.
