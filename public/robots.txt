@@ -1,4 +1,11 @@
+# Robots.txt for Le Papio Restaurant
+# https://lepapio.fr
+
 User-agent: *
 Allow: /
 
+# Sitemap location
 Sitemap: https://lepapio.fr/sitemap.xml
+
+# Disallow admin area
+Disallow: /admin/

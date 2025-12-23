@@ -11,11 +11,11 @@ const Gallery = () => {
     { src: "/vue_du_port.jpg", alt: "Vue panoramique du port de Cherbourg depuis la terrasse" },
     { src: "/facade.jpg", alt: "Façade du restaurant Le Papio" },
     { src: "/interieur.jpg", alt: "Intérieur chaleureux du restaurant" },
-    { src: "/entrecote .jpg", alt: "Entrecôte grillée" },
+    { src: "/entrecote.jpg", alt: "Entrecôte grillée" },
     { src: "/saumon.jpg", alt: "Plat de saumon" },
     { src: "/pizzas.jpeg", alt: "Pizzas artisanales" },
     { src: "/Pizza.jpg", alt: "Pizza artisanale" },
-    { src: "/Hareng mariné.jpg", alt: "Hareng mariné" },
+    { src: "/hareng-marine.jpg", alt: "Hareng mariné" },
     { src: "/papillotte.jpg", alt: "Poisson en papillotte" },
     { src: "/tiramissu.jpg", alt: "Tiramisu maison" },
     { src: "/fondant.jpeg", alt: "Fondant au chocolat" }
@@ -58,9 +58,10 @@ const Gallery = () => {
               className="relative group cursor-pointer overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all duration-300 aspect-square"
               onClick={() => openModal(index)}
             >
-              <img 
+              <img
                 src={image.src}
                 alt={image.alt}
+                loading="lazy"
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/1146760/pexels-photo-1146760.jpeg";
